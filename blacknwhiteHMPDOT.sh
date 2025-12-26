@@ -2,7 +2,7 @@
 
 # ==========================================
 # ВАЖНО: ВСТАВЬ СЮДА ССЫЛКУ НА ТВОЙ РЕПОЗИТОРИЙ
-REPO_URL="https://github.com/ВАШ_НИК/НАЗВАНИЕ_РЕПОЗИТОРИЯ.git"
+REPO_URL="https://github.com/HMPIWD/blacknwhitehmpdot.git"
 # ==========================================
 
 CONFIG_DIR="$HOME/.config"
