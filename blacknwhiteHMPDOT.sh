@@ -2,7 +2,7 @@
 
 # ==========================================
 # ВАЖНО: ВСТАВЬ СЮДА ССЫЛКУ НА ТВОЙ РЕПОЗИТОРИЙ
-REPO_URL="https://github.com/HMPIWD/blacknwhitehmpdot.git"
+REPO_URL="https://github.com/ВАШ_НИК/НАЗВАНИЕ_РЕПОЗИТОРИЯ.git"
 # ==========================================
 
 CONFIG_DIR="$HOME/.config"
@@ -21,14 +21,12 @@ echo -e "${BLUE}=== CachyOS Hyprland Installer ===${NC}"
 # ---------------------------------------------------
 # 1. АВТОМАТИЧЕСКАЯ УСТАНОВКА GIT
 # ---------------------------------------------------
-echo -e "${BLUE}[1/7] Проверка наличия Git...${NC}"
+echo -e "${BLUE}[1/8] Проверка наличия Git...${NC}"
 if ! command -v git &> /dev/null; then
     echo -e "${RED}Git не найден. Выполняю автоматическую установку...${NC}"
-    # Обновляем базы данных пакетов и ставим git
     sudo pacman -Sy --noconfirm git
-    
     if ! command -v git &> /dev/null; then
-        echo -e "${RED}ОШИБКА: Не удалось установить Git. Проверьте интернет-соединение.${NC}"
+        echo -e "${RED}ОШИБКА: Не удалось установить Git.${NC}"
         exit 1
     fi
     echo -e "${GREEN}Git успешно установлен!${NC}"
@@ -37,9 +35,9 @@ else
 fi
 
 # ---------------------------------------------------
-# 2. ПРОВЕРКА И УСТАНОВКА YAY (AUR Helper)
+# 2. ПРОВЕРКА И УСТАНОВКА YAY
 # ---------------------------------------------------
-echo -e "${BLUE}[2/7] Проверка AUR helper...${NC}"
+echo -e "${BLUE}[2/8] Проверка AUR helper...${NC}"
 AUR_HELPER="yay"
 if ! command -v yay &> /dev/null; then
     if command -v paru &> /dev/null; then
@@ -60,13 +58,13 @@ fi
 # ---------------------------------------------------
 # 3. ОБНОВЛЕНИЕ СИСТЕМЫ
 # ---------------------------------------------------
-echo -e "${BLUE}[3/7] Полное обновление системы...${NC}"
+echo -e "${BLUE}[3/8] Полное обновление системы...${NC}"
 sudo pacman -Syu --noconfirm
 
 # ---------------------------------------------------
-# 4. УСТАНОВКА ЗАВИСИМОСТЕЙ (Для твоих конфигов)
+# 4. УСТАНОВКА ЗАВИСИМОСТЕЙ
 # ---------------------------------------------------
-echo -e "${BLUE}[4/7] Установка зависимостей для дотфайлов...${NC}"
+echo -e "${BLUE}[4/8] Установка зависимостей для дотфайлов...${NC}"
 DEPENDENCIES=(
     "hyprland"
     "hyprlock"
@@ -86,18 +84,10 @@ DEPENDENCIES=(
 sudo pacman -S --needed --noconfirm "${DEPENDENCIES[@]}"
 
 # ---------------------------------------------------
-# 5. УСТАНОВКА СОФТА (Pacman & AUR)
+# 5. УСТАНОВКА СОФТА
 # ---------------------------------------------------
-echo -e "${BLUE}[5/7] Установка приложений...${NC}"
-
-# Список для Pacman
-PACMAN_APPS=(
-    "steam"
-    "discord"
-    "obs-studio"
-    "vscodium" 
-    "ayugram-desktop"
-)
+echo -e "${BLUE}[5/8] Установка приложений...${NC}"
+PACMAN_APPS=("steam" "discord" "obs-studio" "vscodium" "ayugram-desktop")
 
 for app in "${PACMAN_APPS[@]}"; do
     if sudo pacman -S --needed --noconfirm "$app"; then
@@ -107,40 +97,54 @@ for app in "${PACMAN_APPS[@]}"; do
     fi
 done
 
-# Список для AUR
-YAY_APPS=(
-    "github-desktop-bin"
-    "proton-vpn-gtk"
-    "hyprpanel-bin"
-)
-
-# Проверяем, если ayugram не встал через pacman, добавляем его в список для yay
-if ! command -v ayugram-desktop &> /dev/null; then
-    YAY_APPS+=("ayugram-desktop-bin")
-fi
+YAY_APPS=("github-desktop-bin" "proton-vpn-gtk" "hyprpanel-bin")
+if ! command -v ayugram-desktop &> /dev/null; then YAY_APPS+=("ayugram-desktop-bin"); fi
 
 $AUR_HELPER -S --needed --noconfirm "${YAY_APPS[@]}"
 
 # ---------------------------------------------------
-# 6. БЕКАП И ЗАГРУЗКА ДОТФАЙЛОВ
+# 6. КЛОНИРОВАНИЕ РЕПОЗИТОРИЯ
 # ---------------------------------------------------
-echo -e "${BLUE}[6/7] Скачивание твоего конфига с GitHub...${NC}"
-
-# Чистим временную папку, если была
+echo -e "${BLUE}[6/8] Скачивание конфига...${NC}"
 rm -rf "$TEMP_DIR"
-
-# КЛОНИРУЕМ ТВОЙ РЕПОЗИТОРИЙ
 git clone "$REPO_URL" "$TEMP_DIR"
 
 if [ ! -d "$TEMP_DIR" ]; then
-    echo -e "${RED}ОШИБКА: Не удалось скачать репозиторий. Проверь ссылку в скрипте!${NC}"
+    echo -e "${RED}ОШИБКА: Не удалось скачать репозиторий.${NC}"
     exit 1
 fi
 
-echo -e "${BLUE}Приступаем к замене конфигов...${NC}"
+# ---------------------------------------------------
+# 7. УСТАНОВКА КАСТОМНОГО ШРИФТА
+# ---------------------------------------------------
+echo -e "${BLUE}[7/8] Установка шрифта AzeretMono...${NC}"
+
+# Путь к шрифту в скачанном репо
+FONT_SRC="$TEMP_DIR/fonts/AzeretMono-VariableFont_wght.ttf"
+# Куда копировать
+FONT_DEST_DIR="/usr/share/fonts"
+FONT_DEST_FILE="$FONT_DEST_DIR/AzeretMono-VariableFont_wght.ttf"
+
+if [ -f "$FONT_SRC" ]; then
+    # Копируем с правами root
+    echo -e "Копирую шрифт в системную директорию..."
+    sudo cp "$FONT_SRC" "$FONT_DEST_FILE"
+    
+    # Обновляем кэш шрифтов
+    echo -e "Обновляю кэш шрифтов..."
+    fc-cache -f
+    echo -e "${GREEN}Шрифт успешно установлен!${NC}"
+else
+    echo -e "${RED}ВНИМАНИЕ: Файл шрифта не найден по пути: fonts/AzeretMono-VariableFont_wght.ttf${NC}"
+    echo -e "Проверьте структуру папок в репозитории."
+fi
+
+# ---------------------------------------------------
+# 8. ЗАМЕНА КОНФИГОВ
+# ---------------------------------------------------
+echo -e "${BLUE}[8/8] Применение конфигов...${NC}"
 mkdir -p "$BACKUP_DIR"
 
-# Список папок, которые копируем
 ITEMS_TO_COPY=(
     "Kvantum"
     "alacritty"
@@ -159,26 +163,20 @@ for item in "${ITEMS_TO_COPY[@]}"; do
     dest="$CONFIG_DIR/$item"
     
     if [ -e "$src" ]; then
-        # Бекап старого, если есть
         if [ -e "$dest" ]; then
-            echo -e "  -> Бекап старого $item в $BACKUP_DIR..."
+            echo -e "  -> Бекап: $item"
             mv "$dest" "$BACKUP_DIR/"
         fi
-        
-        # Копирование нового
-        echo -e "${GREEN}  -> Установка $item${NC}"
+        echo -e "${GREEN}  -> Установка: $item${NC}"
         cp -r "$src" "$CONFIG_DIR/"
     else
-        echo -e "${RED}  -> Внимание: $item нет в скачанном репозитории.${NC}"
+        echo -e "${RED}  -> Пропуск: $item не найден в репо.${NC}"
     fi
 done
 
-# Удаляем временную папку
 rm -rf "$TEMP_DIR"
 
-# ---------------------------------------------------
-# 7. ЗАВЕРШЕНИЕ
-# ---------------------------------------------------
-echo -e "${BLUE}[7/7] Готово!${NC}"
-echo -e "Старые конфиги лежат в: ${GREEN}$BACKUP_DIR${NC}"
-echo -e "Теперь можно перезагрузиться или перезайти в Hyprland."
+echo -e "${BLUE}=== Готово! ===${NC}"
+echo -e "Бекапы лежат в: ${GREEN}$BACKUP_DIR${NC}"
+echo -e "Шрифт установлен, программы скачаны."
+echo -e "Перезагрузите компьютер. (reboot)"
