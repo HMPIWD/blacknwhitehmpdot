@@ -156,6 +156,7 @@ backup Kvantum
 backup qt5ct
 backup qt6ct
 backup rofi
+backup dolphinrc
 
 # ==========================================================
 # COPY CONFIGS
@@ -181,6 +182,13 @@ copy_cfg gtk-5.0 gtk-5.0
 copy_cfg qt5ct qt5ct
 copy_cfg qt6ct qt6ct
 copy_cfg rofi rofi
+
+# Dolphin config
+if [ -f "$INSTALL_DIR/dolphinrc" ]; then
+    echo "→ Installing dolphinrc"
+    cp "$INSTALL_DIR/dolphinrc" "$HOME/.config/dolphinrc"
+fi
+
 
 if [ -d "$INSTALL_DIR/kvantum" ]; then
     mkdir -p "$HOME/.config/Kvantum"
