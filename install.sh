@@ -133,7 +133,14 @@ sudo fc-cache -fv
 echo "=== Backing up existing configs ==="
 mkdir -p "$BACKUP_DIR"
 backup() {
-    [ -e "$HOME/.config/$1" ] && cp -r "$HOME/.config/$1" "$BACKUP_DIR/"
+    SRC="$HOME/.config/$1"
+    if [ -e "$SRC" ]; then
+        if [ -d "$SRC" ]; then
+            cp -r "$SRC" "$BACKUP_DIR/"
+        else
+            cp "$SRC" "$BACKUP_DIR/"
+        fi
+    fi
 }
 backup hypr
 backup hyprpanel
