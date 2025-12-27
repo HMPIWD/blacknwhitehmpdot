@@ -92,7 +92,7 @@ sudo pacman -S --needed --noconfirm \
 # ==========================================================
 
 echo "=== Installing Hyprpanel (ags-hyprpanel-git) ==="
-yay -S --needed --noconfirm ags-hyprpanel-git
+yay -S --needed --noconfirm ags-hyprpanel-git hyprpolkitagent
 
 # ==========================================================
 # FONT INSTALL
