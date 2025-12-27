@@ -1,182 +1,185 @@
 #!/bin/bash
+set -e
 
-# ==========================================
-# ВАЖНО: ВСТАВЬ СЮДА ССЫЛКУ НА ТВОЙ РЕПОЗИТОРИЙ
-REPO_URL="https://github.com/HMPIWD/blacknwhitehmpdot.git"
-# ==========================================
+echo "=== Checking for yay ==="
 
-CONFIG_DIR="$HOME/.config"
-BACKUP_DIR="$HOME/.config-backup/$(date +%Y%m%d_%H%M%S)"
-TEMP_DIR="$HOME/tmp_dotfiles_install"
+if ! command -v yay &>/dev/null; then
+    echo "→ yay not found, installing..."
 
-# Цвета для вывода
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+    sudo pacman -S --needed --noconfirm git base-devel
 
-clear
-echo -e "${BLUE}=== CachyOS Hyprland Installer ===${NC}"
+    TMP_DIR="$(mktemp -d)"
+    git clone https://aur.archlinux.org/yay.git "$TMP_DIR/yay"
+    cd "$TMP_DIR/yay"
 
-# ---------------------------------------------------
-# 1. АВТОМАТИЧЕСКАЯ УСТАНОВКА GIT
-# ---------------------------------------------------
-echo -e "${BLUE}[1/8] Проверка наличия Git...${NC}"
-if ! command -v git &> /dev/null; then
-    echo -e "${RED}Git не найден. Выполняю автоматическую установку...${NC}"
-    sudo pacman -Sy --noconfirm git
-    if ! command -v git &> /dev/null; then
-        echo -e "${RED}ОШИБКА: Не удалось установить Git.${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}Git успешно установлен!${NC}"
+    makepkg -si --noconfirm
+
+    cd ~
+    rm -rf "$TMP_DIR"
+
+    echo "✔ yay installed"
 else
-    echo -e "${GREEN}Git уже установлен.${NC}"
+    echo "✔ yay is already installed"
 fi
 
-# ---------------------------------------------------
-# 2. ПРОВЕРКА И УСТАНОВКА YAY
-# ---------------------------------------------------
-echo -e "${BLUE}[2/8] Проверка AUR helper...${NC}"
-AUR_HELPER="yay"
-if ! command -v yay &> /dev/null; then
-    if command -v paru &> /dev/null; then
-        AUR_HELPER="paru"
-        echo -e "${GREEN}Обнаружен paru. Будем использовать его.${NC}"
-    else
-        echo -e "${RED}AUR helper не найден. Устанавливаю yay...${NC}"
-        sudo pacman -S --needed --noconfirm base-devel
-        git clone https://aur.archlinux.org/yay.git /tmp/yay
-        cd /tmp/yay
-        makepkg -si --noconfirm
-        cd ~
-        rm -rf /tmp/yay
-        echo -e "${GREEN}Yay установлен.${NC}"
-    fi
-fi
+# ==========================================================
+# SYSTEM DEPENDENCIES
+# ==========================================================
 
-# ---------------------------------------------------
-# 3. ОБНОВЛЕНИЕ СИСТЕМЫ
-# ---------------------------------------------------
-echo -e "${BLUE}[3/8] Полное обновление системы...${NC}"
-sudo pacman -Syu --noconfirm
+echo "=== Installing system dependencies ==="
 
-# ---------------------------------------------------
-# 4. УСТАНОВКА ЗАВИСИМОСТЕЙ
-# ---------------------------------------------------
-echo -e "${BLUE}[4/8] Установка зависимостей для дотфайлов...${NC}"
-DEPENDENCIES=(
-    "hyprland"
-    "hyprlock"
-    "hyprpaper"
-    "hypridle"
-    "rofi-wayland"
-    "kvantum"
-    "qt5ct"
-    "qt6ct"
-    "alacritty"
-    "dolphin"
-    "ttf-jetbrains-mono-nerd"
-    "noto-fonts-emoji"
-    "papirus-icon-theme"
-    "nwg-look"
-)
-sudo pacman -S --needed --noconfirm "${DEPENDENCIES[@]}"
+sudo pacman -S --needed --noconfirm \
+    hyprland \
+    hyprpaper \
+    hyprlock \
+    hypridle \
+    hyprpicker \
+    alacritty \
+    rofi \
+    rofi-wayland \
+    kvantum \
+    kvantum-theme-materia \
+    qt5ct \
+    qt6ct \
+    nwg-look \
+    gtk4 \
+    gtk3 \
+    python \
+    sassc \
+    fontconfig \
+    wl-clipboard \
+    grim \
+    slurp \
+    wayland-protocols \
+    xdg-desktop-portal \
+    xdg-desktop-portal-hyprland \
+    polkit-kde-agent \
+    gnome-keyring
 
-# ---------------------------------------------------
-# 5. УСТАНОВКА СОФТА
-# ---------------------------------------------------
-echo -e "${BLUE}[5/8] Установка приложений...${NC}"
-PACMAN_APPS=("steam" "discord" "obs-studio" "vscodium" "ayugram-desktop")
+# ==========================================================
+# HYPRPANEL (LOCKED VERSION)
+# ==========================================================
 
-for app in "${PACMAN_APPS[@]}"; do
-    if sudo pacman -S --needed --noconfirm "$app"; then
-        echo -e "${GREEN}[OK] $app${NC}"
-    else
-        echo -e "${RED}[SKIP] $app не найден в pacman, попробуем через AUR.${NC}"
-    fi
-done
+echo "=== Installing Hyprpanel (ags-hyprpanel-git) ==="
+yay -S --needed --noconfirm ags-hyprpanel-git
 
-YAY_APPS=("github-desktop-bin" "proton-vpn-gtk" "hyprpanel-bin")
-if ! command -v ayugram-desktop &> /dev/null; then YAY_APPS+=("ayugram-desktop-bin"); fi
+# ==========================================================
+# FONT INSTALL (Azeret Mono Variable)
+# ==========================================================
 
-$AUR_HELPER -S --needed --noconfirm "${YAY_APPS[@]}"
+echo "=== Installing Azeret Mono system font ==="
 
-# ---------------------------------------------------
-# 6. КЛОНИРОВАНИЕ РЕПОЗИТОРИЯ
-# ---------------------------------------------------
-echo -e "${BLUE}[6/8] Скачивание конфига...${NC}"
-rm -rf "$TEMP_DIR"
-git clone "$REPO_URL" "$TEMP_DIR"
+FONT_SRC="./fonts/AzeretMono-VariableFont_wght.ttf"
+FONT_DEST="/usr/share/fonts/TTF"
 
-if [ ! -d "$TEMP_DIR" ]; then
-    echo -e "${RED}ОШИБКА: Не удалось скачать репозиторий.${NC}"
+if [ -f "$FONT_SRC" ]; then
+    sudo mkdir -p "$FONT_DEST"
+    sudo cp "$FONT_SRC" "$FONT_DEST/"
+    echo "✔ Font copied to $FONT_DEST"
+else
+    echo "✖ Font file not found: $FONT_SRC"
     exit 1
 fi
 
-# ---------------------------------------------------
-# 7. УСТАНОВКА КАСТОМНОГО ШРИФТА
-# ---------------------------------------------------
-echo -e "${BLUE}[7/8] Установка шрифта AzeretMono...${NC}"
+sudo fc-cache -fv
 
-# Путь к шрифту в скачанном репо
-FONT_SRC="$TEMP_DIR/fonts/AzeretMono-VariableFont_wght.ttf"
-# Куда копировать
-FONT_DEST_DIR="/usr/share/fonts"
-FONT_DEST_FILE="$FONT_DEST_DIR/AzeretMono-VariableFont_wght.ttf"
+# ==========================================================
+# FONTCONFIG (system monospace)
+# ==========================================================
 
-if [ -f "$FONT_SRC" ]; then
-    # Копируем с правами root
-    echo -e "Копирую шрифт в системную директорию..."
-    sudo cp "$FONT_SRC" "$FONT_DEST_FILE"
-    
-    # Обновляем кэш шрифтов
-    echo -e "Обновляю кэш шрифтов..."
-    fc-cache -f
-    echo -e "${GREEN}Шрифт успешно установлен!${NC}"
-else
-    echo -e "${RED}ВНИМАНИЕ: Файл шрифта не найден по пути: fonts/AzeretMono-VariableFont_wght.ttf${NC}"
-    echo -e "Проверьте структуру папок в репозитории."
-fi
+echo "=== Configuring system monospace font ==="
 
-# ---------------------------------------------------
-# 8. ЗАМЕНА КОНФИГОВ
-# ---------------------------------------------------
-echo -e "${BLUE}[8/8] Применение конфигов...${NC}"
+sudo tee /etc/fonts/local.conf >/dev/null << 'EOF'
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+
+  <alias>
+    <family>monospace</family>
+    <prefer>
+      <family>Azeret Mono</family>
+    </prefer>
+  </alias>
+
+</fontconfig>
+EOF
+
+sudo fc-cache -fv
+
+# ==========================================================
+# CONFIG BACKUP
+# ==========================================================
+
+echo "=== Creating config backup ==="
+BACKUP_DIR="$HOME/.config/backup_$(date +%F_%H-%M)"
 mkdir -p "$BACKUP_DIR"
 
-ITEMS_TO_COPY=(
-    "Kvantum"
-    "alacritty"
-    "dolphinrc"
-    "gtk-3.0"
-    "gtk-4.0"
-    "hypr"
-    "hyprpanel"
-    "qt5ct"
-    "qt6ct"
-    "rofi"
-)
-
-for item in "${ITEMS_TO_COPY[@]}"; do
-    src="$TEMP_DIR/$item"
-    dest="$CONFIG_DIR/$item"
-    
-    if [ -e "$src" ]; then
-        if [ -e "$dest" ]; then
-            echo -e "  -> Бекап: $item"
-            mv "$dest" "$BACKUP_DIR/"
-        fi
-        echo -e "${GREEN}  -> Установка: $item${NC}"
-        cp -r "$src" "$CONFIG_DIR/"
-    else
-        echo -e "${RED}  -> Пропуск: $item не найден в репо.${NC}"
+backup_if_exists() {
+    if [ -d "$HOME/.config/$1" ]; then
+        echo "→ Backup $1"
+        cp -r "$HOME/.config/$1" "$BACKUP_DIR/"
     fi
-done
+}
 
-rm -rf "$TEMP_DIR"
+backup_if_exists hypr
+backup_if_exists hyprpanel
+backup_if_exists alacritty
+backup_if_exists gtk-4.0
+backup_if_exists gtk-5.0
+backup_if_exists Kvantum
+backup_if_exists qt5ct
+backup_if_exists qt6ct
+backup_if_exists rofi
 
-echo -e "${BLUE}=== Готово! ===${NC}"
-echo -e "Бекапы лежат в: ${GREEN}$BACKUP_DIR${NC}"
-echo -e "Шрифт установлен, программы скачаны."
-echo -e "Перезагрузите компьютер. (reboot)"
+# ==========================================================
+# COPY CONFIGS
+# ==========================================================
+
+echo "=== Copying new configs ==="
+
+copy_cfg() {
+    SRC="$1"
+    DEST="$HOME/.config/$2"
+
+    if [ -d "$SRC" ]; then
+        mkdir -p "$DEST"
+        echo "→ Copying $SRC → $DEST"
+        cp -r "$SRC"/* "$DEST"/
+    fi
+}
+
+copy_cfg hypr hypr
+copy_cfg hyprpanel hyprpanel
+copy_cfg alacritty alacritty
+copy_cfg gtk-4.0 gtk-4.0
+copy_cfg gtk-5.0 gtk-5.0
+copy_cfg qt5ct qt5ct
+copy_cfg qt6ct qt6ct
+copy_cfg rofi rofi
+
+if [ -d kvantum ]; then
+    mkdir -p "$HOME/.config/Kvantum"
+    echo "→ Copying Kvantum themes"
+    cp -r kvantum/* "$HOME/.config/Kvantum/"
+fi
+
+# ==========================================================
+# ACTIVATE KVANTUM
+# ==========================================================
+
+echo "=== Activating Kvantum themes ==="
+if command -v kvantummanager &>/dev/null; then
+    THEME=$(ls kvantum 2>/dev/null | head -n 1)
+    if [ -n "$THEME" ]; then
+        kvantummanager --set "$THEME"
+    fi
+fi
+
+# ==========================================================
+# DONE
+# ==========================================================
+
+echo "=== DONE ==="
+echo "✔ Azeret Mono is now system monospace"
+echo "✔ Backups stored in: $BACKUP_DIR"
+echo "➡ Reboot or re-login for full effect"
