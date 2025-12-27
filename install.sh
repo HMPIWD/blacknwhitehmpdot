@@ -20,6 +20,7 @@ CONFIG_ITEMS=( \
     "qt6ct" \
     "rofi" \
     "dolphinrc" \
+    ".themes" \
 )
 
 echo "=== blacknwhitehmpdot installer ==="
@@ -169,6 +170,14 @@ copy_cfg() {
         echo "→ Copied folder: $2"
     fi
 }
+
+# Copy GTK themes to ~/.themes
+if [ -d "$INSTALL_DIR/.themes" ]; then
+    mkdir -p "$HOME/.themes"
+    cp -r "$INSTALL_DIR/.themes/"* "$HOME/.themes/"
+    echo "→ Copied GTK themes to ~/.themes"
+fi
+
 
 copy_cfg hypr hypr
 copy_cfg hyprpanel hyprpanel
