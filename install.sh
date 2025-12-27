@@ -85,7 +85,8 @@ sudo pacman -S --needed --noconfirm \
     xdg-desktop-portal \
     xdg-desktop-portal-hyprland \
     polkit-kde-agent \
-    gnome-keyring
+    gnome-keyring \
+    brightnessctl
 
 # ==========================================================
 # HYPRPANEL (KNOWN GOOD VERSION)
