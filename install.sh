@@ -8,12 +8,25 @@ REPO_URL="https://github.com/HMPIWD/blacknwhitehmpdot.git"
 INSTALL_DIR="$HOME/.local/share/blacknwhitehmpdot"
 BACKUP_DIR="$HOME/.config/backup_$(date +%F_%H-%M)"
 
+CONFIG_ITEMS=( \
+    "Kvantum" \
+    "alacritty" \
+    "fonts" \
+    "gtk-3.0" \
+    "gtk-4.0" \
+    "hypr" \
+    "hyprpanel" \
+    "qt5ct" \
+    "qt6ct" \
+    "rofi" \
+    "dolphinrc" \
+)
+
 echo "=== blacknwhitehmpdot installer ==="
 
 # -----------------------------
 # REQUIREMENTS
 # -----------------------------
-echo "=== Checking for git ==="
 if ! command -v git &>/dev/null; then
     echo "→ Installing git..."
     sudo pacman -S --needed --noconfirm git
@@ -29,13 +42,11 @@ else
     echo "→ Dotfiles repo already exists, updating"
     git -C "$INSTALL_DIR" pull
 fi
-
 cd "$INSTALL_DIR"
 
 # -----------------------------
 # YAY
 # -----------------------------
-echo "=== Checking for yay ==="
 if ! command -v yay &>/dev/null; then
     echo "→ Installing yay..."
     sudo pacman -S --needed --noconfirm base-devel
@@ -87,32 +98,27 @@ sudo pacman -S --needed --noconfirm \
 # -----------------------------
 # HYPRPANEL & POLKIT
 # -----------------------------
-echo "=== Installing Hyprpanel (ags-hyprpanel-git) ==="
 yay -S --needed --noconfirm ags-hyprpanel-git
-
-echo "=== Installing Polkit agent (Hyprland) ==="
 yay -S --needed --noconfirm hyprpolkitagent
 
 # -----------------------------
 # FONT INSTALL (Azeret Mono)
 # -----------------------------
-echo "=== Installing Azeret Mono ==="
 FONT_SRC="$INSTALL_DIR/fonts/AzeretMono-VariableFont_wght.ttf"
 FONT_DEST="/usr/share/fonts/TTF"
 
 if [ -f "$FONT_SRC" ]; then
     sudo mkdir -p "$FONT_DEST"
     sudo cp "$FONT_SRC" "$FONT_DEST/"
+    sudo fc-cache -fv
 else
     echo "✖ Font not found: $FONT_SRC"
     exit 1
 fi
-sudo fc-cache -fv
 
 # -----------------------------
 # FONTCONFIG
 # -----------------------------
-echo "=== Configuring monospace font ==="
 sudo tee /etc/fonts/local.conf >/dev/null << 'EOF'
 <?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
@@ -132,26 +138,23 @@ sudo fc-cache -fv
 # -----------------------------
 echo "=== Backing up existing configs ==="
 mkdir -p "$BACKUP_DIR"
+
 backup() {
     SRC="$HOME/.config/$1"
     if [ -e "$SRC" ]; then
         if [ -d "$SRC" ]; then
             cp -r "$SRC" "$BACKUP_DIR/"
+            echo "→ Backed up folder: $1"
         else
             cp "$SRC" "$BACKUP_DIR/"
+            echo "→ Backed up file: $1"
         fi
     fi
 }
-backup hypr
-backup hyprpanel
-backup alacritty
-backup gtk-4.0
-backup gtk-5.0
-backup Kvantum
-backup qt5ct
-backup qt6ct
-backup rofi
-backup dolphinrc
+
+for item in "${CONFIG_ITEMS[@]}"; do
+    backup "$item"
+done
 
 # -----------------------------
 # COPY CONFIGS
@@ -163,28 +166,25 @@ copy_cfg() {
     if [ -d "$SRC" ]; then
         mkdir -p "$DEST"
         cp -r "$SRC"/* "$DEST"/
+        echo "→ Copied folder: $2"
     fi
 }
 
 copy_cfg hypr hypr
 copy_cfg hyprpanel hyprpanel
 copy_cfg alacritty alacritty
+copy_cfg gtk-3.0 gtk-3.0
 copy_cfg gtk-4.0 gtk-4.0
-copy_cfg gtk-5.0 gtk-5.0
+copy_cfg Kvantum Kvantum
 copy_cfg qt5ct qt5ct
 copy_cfg qt6ct qt6ct
 copy_cfg rofi rofi
+copy_cfg fonts fonts
 
-# Dolphin config (single file)
+# Dolphin config (file)
 if [ -f "$INSTALL_DIR/dolphinrc" ]; then
-    echo "→ Installing dolphinrc"
     cp "$INSTALL_DIR/dolphinrc" "$HOME/.config/dolphinrc"
-fi
-
-# Kvantum themes
-if [ -d "$INSTALL_DIR/kvantum" ]; then
-    mkdir -p "$HOME/.config/Kvantum"
-    cp -r "$INSTALL_DIR/kvantum"/* "$HOME/.config/Kvantum/"
+    echo "→ Copied file: dolphinrc"
 fi
 
 # -----------------------------
